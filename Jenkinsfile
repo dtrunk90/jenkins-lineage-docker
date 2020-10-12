@@ -54,7 +54,7 @@ pipeline {
 				script {
 					if (env.BUILD_NUMBER.equals("1") && currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null) {
 						currentBuild.displayName = 'Parameter loading'
-						addBuildDescription('Please restart pipeline')
+						currentBuild.description = 'Please restart pipeline'
 						currentBuild.result = 'ABORTED'
 						error('Stopping initial manually triggered build as we only want to get the parameters')
 					}

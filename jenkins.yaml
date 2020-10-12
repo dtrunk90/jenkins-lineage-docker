@@ -20,7 +20,9 @@ jobs:
 security:
   scriptApproval:
     approvedSignatures:
+      - method groovy.util.XmlSlurper parseText java.lang.String
       - method groovy.util.slurpersupport.GPathResult appendNode java.lang.Object
+      - new groovy.util.XmlSlurper
 unclassified:
   gitSCM:
     globalConfigEmail: "john.doe@example.com"

@@ -1,0 +1,10 @@
+version: "3.7"
+services:
+  jenkins:
+    build:
+      context: .
+    container_name: jenkins_lineage
+    ports:
+      - 80:8080
+    volumes:
+      - jenkins_lineage_home:/var/jenkins_home

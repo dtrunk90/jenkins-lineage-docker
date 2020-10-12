@@ -1,0 +1,18 @@
+jenkins:
+  authorizationStrategy: unsecured
+jobs:
+  - script: >
+      pipelineJob('lineage') {
+        definition {
+          cpsScm {
+            scriptPath 'Jenkinsfile'
+            scm {
+              git('https://github.com/dtrunk90/jenkins-lineage-docker.git')
+            }
+          }
+        }
+      }
+unclassified:
+  gitSCM:
+    globalConfigEmail: "john.doe@example.com"
+    globalConfigName: "John Doe"

@@ -3,9 +3,9 @@ FROM jenkins/jenkins:lts
 USER root
 
 # Install the build packages
-RUN apt update \
-	&& apt upgrade -y \
-	&& apt install -y bc bison build-essential ccache curl flex \
+RUN apt-get update \
+	&& apt-get upgrade -y \
+	&& apt-get install -y bc bison build-essential ccache curl flex \
 			g++-multilib gcc-multilib git gnupg gperf imagemagick \
 			lib32ncurses5-dev lib32readline-dev lib32z1-dev \
 			liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev \

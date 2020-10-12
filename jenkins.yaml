@@ -7,7 +7,12 @@ jobs:
           cpsScm {
             scriptPath 'Jenkinsfile'
             scm {
-              git('https://github.com/dtrunk90/jenkins-lineage-docker.git')
+              git {
+                remote {
+                  url 'https://github.com/dtrunk90/jenkins-lineage-docker.git'
+                }
+                extensions {}
+              }
             }
           }
         }

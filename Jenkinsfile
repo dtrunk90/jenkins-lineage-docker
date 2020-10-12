@@ -82,8 +82,8 @@ pipeline {
 						}
 					}
 
-					def vendorRepositoryNameMatcher = (VENDOR_REPOSITORY_NAME =~ /([^\/]+)\/proprietary_vendor_([^_]+)/)
-					def deviceRepositoryNameMatcher = (DEVICE_REPOSITORY_NAME =~ /([^\/]+)\/android_device_([^_]+)_([^_]+)/)
+					def vendorRepositoryNameMatcher = (params.VENDOR_REPOSITORY_NAME =~ /([^\/]+)\/proprietary_vendor_([^_]+)/)
+					def deviceRepositoryNameMatcher = (params.DEVICE_REPOSITORY_NAME =~ /([^\/]+)\/android_device_([^_]+)_([^_]+)/)
 
 					def manifest = readFile "${LOCAL_MANIFESTS_FILE}"
 					def projects = new XmlSlurper().parseText(manifest)

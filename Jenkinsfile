@@ -50,6 +50,16 @@ pipeline {
 	stages {
 		stage('Initialize') {
 			steps {
+				// ugly workaround for a known jenkins bug: https://issues.jenkins-ci.org/browse/JENKINS-41929
+				script {
+					if (env.BUILD_NUMBER.equals("1") && currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null) {
+						currentBuild.displayName = 'Parameter loading'
+						addBuildDescription('Please restart pipeline')
+						currentBuild.result = 'ABORTED'
+						error('Stopping initial manually triggered build as we only want to get the parameters')
+					}
+				}
+
 				sh """#!/bin/bash
 				repo init -u ${REPOSITORY_URL} -b ${params.BRANCH}
 				if [[ ! -e "${LOCAL_MANIFESTS_FILE}" ]]; then

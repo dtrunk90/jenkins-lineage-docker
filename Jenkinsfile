@@ -22,7 +22,7 @@ pipeline {
 				description: 'GitHub vendor repository name, e.g. TheMuppets/proprietary_vendor_samsung.',
 				failedValidationMessage: 'Invalid value',
 				name: 'VENDOR_REPOSITORY_NAME',
-				regex: '[^\\/]+\\/(android|proprietary)_vendor_[^_]+'
+				regex: '[^\\/]+\\/(android|proprietary)_vendor_[^_]+(_.*)?'
 		validatingString defaultValue: '',
 				description: 'GitHub device repository name, e.g. LineageOS/android_device_samsung_klte.',
 				failedValidationMessage: 'Invalid value',
@@ -101,7 +101,7 @@ pipeline {
 						appendProjectNode(projects, "${params.DEVICE_REPOSITORY_NAME}", "device/${vendor}/${device}")
 					}
 
-					vendor = (params.VENDOR_REPOSITORY_NAME =~ /([^\/]+)\/(?:android|proprietary)_vendor_([^_]+)/)[-1][2]
+					vendor = (params.VENDOR_REPOSITORY_NAME =~ /([^\/]+)\/(?:android|proprietary)_vendor_([^_]+)(?:_.*)?/)[-1][2]
 					device = (params.DEVICE_REPOSITORY_NAME =~ /([^\/]+)\/android_device_([^_]+)_([^_]+)/)[-1][3]
 
 					roomservice(vendor, device)

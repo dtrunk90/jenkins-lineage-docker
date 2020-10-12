@@ -17,6 +17,10 @@ jobs:
           }
         }
       }
+security:
+  scriptApproval:
+    approvedSignatures:
+      - method groovy.util.slurpersupport.GPathResult appendNode java.lang.Object
 unclassified:
   gitSCM:
     globalConfigEmail: "john.doe@example.com"

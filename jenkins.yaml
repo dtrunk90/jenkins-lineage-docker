@@ -8,10 +8,19 @@ jobs:
             scriptPath 'Jenkinsfile'
             scm {
               git {
+                configure { git ->
+                  git / 'extensions' / 'hudson.plugins.git.extensions.impl.SparseCheckoutPaths' / 'sparseCheckoutPaths' {
+                    ['Jenkinsfile'].each { mypath ->
+                      'hudson.plugins.git.extensions.impl.SparseCheckoutPath' {
+                        path("${mypath}")
+                      }
+                    }
+                  }
+                }
+                extensions {}
                 remote {
                   url 'https://github.com/dtrunk90/jenkins-lineage-docker.git'
                 }
-                extensions {}
               }
             }
           }

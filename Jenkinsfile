@@ -1,3 +1,32 @@
+@NonCPS
+def roomservice(String vendor, String device) {
+	def manifest = readFile "${LOCAL_MANIFESTS_FILE}"
+
+	def appendProjectNode
+	appendProjectNode = { projects, name, path ->
+		if (!projects.project.any { it['@path'] == "${path}" }) {
+			projects.appendNode(new XmlSlurper().parseText("<project name=\"${name}\" path=\"${path}\" remote=\"github\" />"))
+			writeFile file: "${LOCAL_MANIFESTS_FILE}", text: groovy.xml.XmlUtil.serialize(projects)
+
+			sh("""#!/bin/bash
+			repo sync -j ${params.SYNC_THREADS} "${path}"
+			""")
+
+			if (fileExists("${path}/lineage.dependencies")) {
+				def dependencies = readFile "${path}/lineage.dependencies"
+				new groovy.json.JsonSlurper().parseText(dependencies).each {
+					appendProjectNode(projects, "${name.tokenize('/').first()}/${it['repository']}", it['target_path'])
+				}
+			}
+		}
+	}
+
+	def projects = new XmlSlurper().parseText(manifest)
+
+	appendProjectNode(projects, "${params.VENDOR_REPOSITORY_NAME}", "vendor/${vendor}")
+	appendProjectNode(projects, "${params.DEVICE_REPOSITORY_NAME}", "device/${vendor}/${device}")
+}
+
 pipeline {
 	agent any
 	environment {
@@ -72,38 +101,8 @@ pipeline {
 				"""
 
 				script {
-					@NonCPS
-					def roomservice = { vendor, device ->
-						def manifest = readFile "${LOCAL_MANIFESTS_FILE}"
-
-						def appendProjectNode
-						appendProjectNode = { projects, name, path ->
-							if (!projects.project.any { it['@path'] == "${path}" }) {
-								projects.appendNode(new XmlSlurper().parseText("<project name=\"${name}\" path=\"${path}\" remote=\"github\" />"))
-								writeFile file: "${LOCAL_MANIFESTS_FILE}", text: groovy.xml.XmlUtil.serialize(projects)
-
-								sh("""#!/bin/bash
-								repo sync -j ${params.SYNC_THREADS} "${path}"
-								""")
-
-								if (fileExists("${path}/lineage.dependencies")) {
-									def dependencies = readFile "${path}/lineage.dependencies"
-									new groovy.json.JsonSlurper().parseText(dependencies).each {
-										appendProjectNode(projects, "${name.tokenize('/').first()}/${it['repository']}", it['target_path'])
-									}
-								}
-							}
-						}
-
-						def projects = new XmlSlurper().parseText(manifest)
-
-						appendProjectNode(projects, "${params.VENDOR_REPOSITORY_NAME}", "vendor/${vendor}")
-						appendProjectNode(projects, "${params.DEVICE_REPOSITORY_NAME}", "device/${vendor}/${device}")
-					}
-
 					vendor = (params.VENDOR_REPOSITORY_NAME =~ /([^\/]+)\/(?:android|proprietary)_vendor_([^_]+)(?:_.*)?/)[-1][2]
 					device = (params.DEVICE_REPOSITORY_NAME =~ /([^\/]+)\/android_device_([^_]+)_([^_]+)/)[-1][3]
-
 					roomservice(vendor, device)
 				}
 

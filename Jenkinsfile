@@ -111,7 +111,7 @@ pipeline {
 
 								readJSON(file: "${path}/lineage.dependencies").each {
 									def dependencyName = "${name.tokenize('/').first()}/${it['repository']}"
-									def response = httpRequest url: "${remoteBaseUrl}/${dependencyName}", validResponseCodes: '100:404'
+									def response = httpRequest url: "${remoteBaseUrl}/${dependencyName}", quiet: true, validResponseCodes: '100:404'
 									def dependencyRemote = remote
 
 									if (response.status == 404) {

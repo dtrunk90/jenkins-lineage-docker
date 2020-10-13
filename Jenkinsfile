@@ -88,7 +88,9 @@ pipeline {
 					device = (params.DEVICE_REPOSITORY_NAME =~ /([^\/]+)\/android_device_([^_]+)_([^_]+)/)[-1][3]
 
 					def appendProjectNode
-					appendProjectNode = { manifest, name, path, remote ->
+					appendProjectNode = { name, path, remote ->
+						def manifest = readFile "${LOCAL_MANIFESTS_FILE}"
+
 						if (!new XmlSlurper().parseText(manifest).project.any { it['@path'] == "${path}" }) {
 							writeFile file: "${LOCAL_MANIFESTS_FILE}", text: groovy.xml.XmlUtil.serialize(new XmlSlurper()
 									.parseText(manifest).leftShift(new XmlSlurper()
@@ -121,9 +123,8 @@ pipeline {
 						}
 					}
 
-					def manifest = readFile "${LOCAL_MANIFESTS_FILE}"
-					appendProjectNode(manifest, params.VENDOR_REPOSITORY_NAME, "vendor/${vendor}", params.VENDOR_REPOSITORY_REMOTE)
-					appendProjectNode(manifest, params.DEVICE_REPOSITORY_NAME, "device/${vendor}/${device}", params.DEVICE_REPOSITORY_REMOTE)
+					appendProjectNode(params.VENDOR_REPOSITORY_NAME, "vendor/${vendor}", params.VENDOR_REPOSITORY_REMOTE)
+					appendProjectNode(params.DEVICE_REPOSITORY_NAME, "device/${vendor}/${device}", params.DEVICE_REPOSITORY_REMOTE)
 				}
 
 				sh """#!/bin/bash

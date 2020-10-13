@@ -99,11 +99,10 @@ pipeline {
 							""")
 
 							if (fileExists("${path}/lineage.dependencies")) {
-								def remoteBaseUrl
+								def remoteBaseUrl = 'https://github.com'
+
 								if ("gitlab".equals(remote)) {
 									remoteBaseUrl = 'https://gitlab.com'
-								} else {
-									remoteBaseUrl = 'https://github.com'
 								}
 
 								readJSON(file: "${path}/lineage.dependencies").each {

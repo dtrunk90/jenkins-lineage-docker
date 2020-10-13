@@ -117,7 +117,7 @@ pipeline {
 										dependencyRemote = 'github'
 									}
 
-									appendProjectNode(manifest, dependencyName, it['target_path'], dependencyRemote)
+									appendProjectNode(dependencyName, it['target_path'], dependencyRemote)
 								}
 							}
 						}

@@ -30,6 +30,7 @@ security:
       - method groovy.lang.GroovyObject getProperty java.lang.String
       - method groovy.util.XmlSlurper parseText java.lang.String
       - method groovy.util.slurpersupport.GPathResult appendNode java.lang.Object
+      - method groovy.util.slurpersupport.GPathResult leftShift java.lang.Object
       - new groovy.util.XmlSlurper
       - staticMethod groovy.xml.XmlUtil serialize groovy.util.slurpersupport.GPathResult
       - staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods getAt java.lang.Object java.lang.String

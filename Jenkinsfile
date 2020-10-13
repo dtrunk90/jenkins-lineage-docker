@@ -99,8 +99,24 @@ pipeline {
 							""")
 
 							if (fileExists("${path}/lineage.dependencies")) {
+								def remoteBaseUrl
+								if ("gitlab".equals(remote)) {
+									remoteBaseUrl = 'https://gitlab.com'
+								} else {
+									remoteBaseUrl = 'https://github.com'
+								}
+
 								readJSON(file: "${path}/lineage.dependencies").each {
-									appendProjectNode(manifest, "${name.tokenize('/').first()}/${it['repository']}", it['target_path'], remote)
+									def dependencyName = "${name.tokenize('/').first()}/${it['repository']}"
+									def response = httpRequest "${remoteBaseUrl}/${dependencyName}"
+									def dependencyRemote = remote
+
+									if (response.status == 404) {
+										dependencyName = "LineageOS/${it['repository']}"
+										dependencyRemote = 'github'
+									}
+
+									appendProjectNode(manifest, dependencyName, it['target_path'], dependencyRemote)
 								}
 							}
 						}

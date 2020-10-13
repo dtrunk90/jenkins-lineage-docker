@@ -25,6 +25,7 @@ RUN jenkins-plugin-cli --plugins \
 	configuration-as-code \
 	extended-choice-parameter \
 	git \
+	http_request \
 	job-dsl \
 	list-git-branches-parameter \
 	pipeline-utility-steps \

@@ -10,10 +10,8 @@ jobs:
               git {
                 configure { git ->
                   git / 'extensions' / 'hudson.plugins.git.extensions.impl.SparseCheckoutPaths' / 'sparseCheckoutPaths' {
-                    ['Jenkinsfile'].each { mypath ->
-                      'hudson.plugins.git.extensions.impl.SparseCheckoutPath' {
-                        path("${mypath}")
-                      }
+                    'hudson.plugins.git.extensions.impl.SparseCheckoutPath' {
+                      path('Jenkinsfile')
                     }
                   }
                 }

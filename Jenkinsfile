@@ -99,8 +99,7 @@ pipeline {
 							""")
 
 							if (fileExists("${path}/lineage.dependencies")) {
-								def dependencies = readFile "${path}/lineage.dependencies"
-								new groovy.json.JsonSlurper().parseText(dependencies).each {
+								readJSON("${path}/lineage.dependencies").each {
 									appendProjectNode(manifest, "${name.tokenize('/').first()}/${it['repository']}", it['target_path'], remote)
 								}
 							}

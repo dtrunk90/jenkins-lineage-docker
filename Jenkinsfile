@@ -91,7 +91,7 @@ pipeline {
 					appendProjectNode = { manifest, name, path, remote ->
 						if (!new XmlSlurper().parseText(manifest).project.any { it['@path'] == "${path}" }) {
 							writeFile file: "${LOCAL_MANIFESTS_FILE}", text: groovy.xml.XmlUtil.serialize(new XmlSlurper()
-									.parseText(manifest).appendNode(new XmlSlurper()
+									.parseText(manifest).leftShift(new XmlSlurper()
 											.parseText("<project name=\"${name}\" path=\"${path}\" remote=\"${remote}\" />")))
 
 							sh("""#!/bin/bash

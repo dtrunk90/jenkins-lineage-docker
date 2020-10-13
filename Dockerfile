@@ -27,5 +27,6 @@ RUN jenkins-plugin-cli --plugins \
 	git \
 	job-dsl \
 	list-git-branches-parameter \
+	pipeline-utility-steps \
 	validating-string-parameter \
 	workflow-aggregator

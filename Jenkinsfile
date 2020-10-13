@@ -99,7 +99,7 @@ pipeline {
 							""")
 
 							if (fileExists("${path}/lineage.dependencies")) {
-								readJSON("${path}/lineage.dependencies").each {
+								readJSON(file: "${path}/lineage.dependencies").each {
 									appendProjectNode(manifest, "${name.tokenize('/').first()}/${it['repository']}", it['target_path'], remote)
 								}
 							}

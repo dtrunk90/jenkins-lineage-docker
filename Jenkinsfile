@@ -1,32 +1,3 @@
-@NonCPS
-def roomservice(String vendor, String device) {
-	def manifest = readFile "${LOCAL_MANIFESTS_FILE}"
-
-	def appendProjectNode
-	appendProjectNode = { projects, name, path ->
-		if (!projects.project.any { it['@path'] == "${path}" }) {
-			projects.appendNode(new XmlSlurper().parseText("<project name=\"${name}\" path=\"${path}\" remote=\"github\" />"))
-			writeFile file: "${LOCAL_MANIFESTS_FILE}", text: groovy.xml.XmlUtil.serialize(projects)
-
-			sh("""#!/bin/bash
-			repo sync -j ${params.SYNC_THREADS} "${path}"
-			""")
-
-			if (fileExists("${path}/lineage.dependencies")) {
-				def dependencies = readFile "${path}/lineage.dependencies"
-				new groovy.json.JsonSlurper().parseText(dependencies).each {
-					appendProjectNode(projects, "${name.tokenize('/').first()}/${it['repository']}", it['target_path'])
-				}
-			}
-		}
-	}
-
-	def projects = new XmlSlurper().parseText(manifest)
-
-	appendProjectNode(projects, "${params.VENDOR_REPOSITORY_NAME}", "vendor/${vendor}")
-	appendProjectNode(projects, "${params.DEVICE_REPOSITORY_NAME}", "device/${vendor}/${device}")
-}
-
 pipeline {
 	agent any
 	environment {
@@ -47,11 +18,21 @@ pipeline {
 				groovyScript: 'return 2..Runtime.getRuntime().availableProcessors()',
 				name: 'SYNC_THREADS',
 				type: 'PT_SINGLE_SELECT'
+		extendedChoice defaultValue: 'github',
+				description: 'Where is the vendor repository hosted?',
+				name: 'VENDOR_REPOSITORY_REMOTE',
+				type: 'PT_RADIO',
+				value: 'github, gitlab'
 		validatingString defaultValue: '',
-				description: 'GitHub vendor repository name, e.g. TheMuppets/proprietary_vendor_samsung.',
+				description: 'Vendor repository name, e.g. TheMuppets/proprietary_vendor_samsung.',
 				failedValidationMessage: 'Invalid value',
 				name: 'VENDOR_REPOSITORY_NAME',
 				regex: '[^\\/]+\\/(android|proprietary)_vendor_[^_]+(_.*)?'
+		extendedChoice defaultValue: 'github',
+				description: 'Where is the device repository hosted?',
+				name: 'DEVICE_REPOSITORY_REMOTE',
+				type: 'PT_RADIO',
+				value: 'github, gitlab'
 		validatingString defaultValue: '',
 				description: 'GitHub device repository name, e.g. LineageOS/android_device_samsung_klte.',
 				failedValidationMessage: 'Invalid value',
@@ -93,9 +74,11 @@ pipeline {
 				repo init -u ${REPOSITORY_URL} -b ${params.BRANCH}
 				if [[ ! -e "${LOCAL_MANIFESTS_FILE}" ]]; then
 					mkdir -p "\$(dirname "${LOCAL_MANIFESTS_FILE}")"
-					tee "${LOCAL_MANIFESTS_FILE}" <<-EOF
+					tee "${LOCAL_MANIFESTS_FILE}" > /dev/null <<-EOF
 					<?xml version="1.0" encoding="UTF-8"?>
-					<manifest />
+					<manifest>
+					  <remote name="gitlab" fetch="https://gitlab.com" />
+					</manifest>
 					EOF
 				fi
 				"""
@@ -103,11 +86,34 @@ pipeline {
 				script {
 					vendor = (params.VENDOR_REPOSITORY_NAME =~ /([^\/]+)\/(?:android|proprietary)_vendor_([^_]+)(?:_.*)?/)[-1][2]
 					device = (params.DEVICE_REPOSITORY_NAME =~ /([^\/]+)\/android_device_([^_]+)_([^_]+)/)[-1][3]
-					roomservice(vendor, device)
+
+					def appendProjectNode
+					appendProjectNode = { manifest, name, path, remote ->
+						if (!new XmlSlurper().parseText(manifest).project.any { it['@path'] == "${path}" }) {
+							writeFile file: "${LOCAL_MANIFESTS_FILE}", text: groovy.xml.XmlUtil.serialize(new XmlSlurper()
+									.parseText(manifest).appendNode(new XmlSlurper()
+											.parseText("<project name=\"${name}\" path=\"${path}\" remote=\"${remote}\" />")))
+
+							sh("""#!/bin/bash
+							repo sync -j ${params.SYNC_THREADS} "${path}"
+							""")
+
+							if (fileExists("${path}/lineage.dependencies")) {
+								def dependencies = readFile "${path}/lineage.dependencies"
+								new groovy.json.JsonSlurper().parseText(dependencies).each {
+									appendProjectNode(manifest, "${name.tokenize('/').first()}/${it['repository']}", it['target_path'], remote)
+								}
+							}
+						}
+					}
+
+					def manifest = readFile "${LOCAL_MANIFESTS_FILE}"
+					appendProjectNode(manifest, params.VENDOR_REPOSITORY_NAME, "vendor/${vendor}", params.VENDOR_REPOSITORY_REMOTE)
+					appendProjectNode(manifest, params.DEVICE_REPOSITORY_NAME, "device/${vendor}/${device}", params.DEVICE_REPOSITORY_REMOTE)
 				}
 
 				sh """#!/bin/bash
-				repo sync -j ${params.SYNC_THREADS}
+				repo sync -j ${params.SYNC_THREADS} --force-sync
 				source build/envsetup.sh
 				add_lunch_combo lineage_${device}-${params.BUILD_VARIANT}
 				lunch lineage_${device}-${params.BUILD_VARIANT}
@@ -121,6 +127,7 @@ pipeline {
 				export CCACHE_EXEC=/usr/bin/ccache
 				ccache -M ${params.CCACHE_SIZE}
 				${params.CCACHE_COMPRESSION} && ccache -o compression=true
+				source build/envsetup.sh
 				mka bacon -j ${params.BUILD_THREADS}
 				"""
 			}
@@ -129,9 +136,10 @@ pipeline {
 					archiveArtifacts allowEmptyArchive: false, artifacts: "out/target/product/${device}/recovery.img, out/target/product/${device}/*.zip", onlyIfSuccessful: true
 				}
 				cleanup {
-					dir('out') {
-						deleteDir()
-					}
+					sh """#!/bin/bash
+					source build/envsetup.sh
+					mka clean
+					"""
 				}
 			}
 		}

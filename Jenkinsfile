@@ -3,6 +3,7 @@ pipeline {
 	environment {
 		REPOSITORY_URL = 'https://github.com/LineageOS/android.git'
 		LOCAL_MANIFESTS_FILE = '.repo/local_manifests/roomservice.xml'
+		LINEAGE_SNIPPET_MANIFEST_FILE = '.repo/manifests/snippets/lineage.xml'
 	}
 	parameters {
 		listGitBranches branchFilter: 'refs/heads/(lineage-.*)',
@@ -88,10 +89,11 @@ pipeline {
 					device = (params.DEVICE_REPOSITORY_NAME =~ /([^\/]+)\/android_device_([^_]+)_([^_]+)/)[-1][3]
 
 					def appendProjectNode
-					appendProjectNode = { name, path, remote ->
+					appendProjectNode = { lineageManifest, name, path, remote ->
 						def manifest = readFile "${LOCAL_MANIFESTS_FILE}"
 
-						if (!new XmlSlurper().parseText(manifest).project.any { it['@path'] == "${path}" }) {
+						if (!new XmlSlurper().parseText(manifest).project.any { it['@path'] == path }
+								&& !new XmlSlurper().parseText(lineageManifest).project.any { it['@path'] == path }) {
 							writeFile file: "${LOCAL_MANIFESTS_FILE}", text: groovy.xml.XmlUtil.serialize(new XmlSlurper()
 									.parseText(manifest).leftShift(new XmlSlurper()
 											.parseText("<project name=\"${name}\" path=\"${path}\" remote=\"${remote}\" />")))
@@ -117,14 +119,15 @@ pipeline {
 										dependencyRemote = 'github'
 									}
 
-									appendProjectNode(dependencyName, it['target_path'], dependencyRemote)
+									appendProjectNode(lineageManifest, dependencyName, it['target_path'], dependencyRemote)
 								}
 							}
 						}
 					}
 
-					appendProjectNode(params.VENDOR_REPOSITORY_NAME, "vendor/${vendor}", params.VENDOR_REPOSITORY_REMOTE)
-					appendProjectNode(params.DEVICE_REPOSITORY_NAME, "device/${vendor}/${device}", params.DEVICE_REPOSITORY_REMOTE)
+					def lineageManifest = readFile "${LINEAGE_SNIPPET_MANIFEST_FILE}"
+					appendProjectNode(lineageManifest, params.VENDOR_REPOSITORY_NAME, "vendor/${vendor}", params.VENDOR_REPOSITORY_REMOTE)
+					appendProjectNode(lineageManifest, params.DEVICE_REPOSITORY_NAME, "device/${vendor}/${device}", params.DEVICE_REPOSITORY_REMOTE)
 				}
 
 				sh """#!/bin/bash

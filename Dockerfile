@@ -20,12 +20,12 @@ RUN ln -s /usr/bin/python2 /usr/bin/python
 RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-downloads/repo \
 	&& chmod a+x /usr/local/bin/repo
 
-USER jenkins
-
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY jenkins.yaml /opt/jenkins/jenkins.yaml
 
 RUN chmod a+x /usr/local/bin/entrypoint.sh
+
+USER jenkins
 
 RUN jenkins-plugin-cli --plugins \
 	configuration-as-code \

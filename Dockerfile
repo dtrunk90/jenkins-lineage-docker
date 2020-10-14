@@ -22,7 +22,10 @@ RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-download
 
 USER jenkins
 
-COPY jenkins.yaml $JENKINS_HOME
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY jenkins.yaml /opt/jenkins/jenkins.yaml
+
+RUN chmod a+x /usr/local/bin/entrypoint.sh
 
 RUN jenkins-plugin-cli --plugins \
 	configuration-as-code \
@@ -34,3 +37,5 @@ RUN jenkins-plugin-cli --plugins \
 	pipeline-utility-steps \
 	validating-string-parameter \
 	workflow-aggregator
+
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]

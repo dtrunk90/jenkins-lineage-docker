@@ -132,9 +132,6 @@ pipeline {
 
 				sh """#!/bin/bash
 				repo sync -j ${params.SYNC_THREADS} --force-sync
-				source build/envsetup.sh
-				add_lunch_combo lineage_${device}-${params.BUILD_VARIANT}
-				lunch lineage_${device}-${params.BUILD_VARIANT}
 				"""
 			}
 		}
@@ -146,6 +143,8 @@ pipeline {
 				ccache -M ${params.CCACHE_SIZE}
 				${params.CCACHE_COMPRESSION} && ccache -o compression=true
 				source build/envsetup.sh
+				add_lunch_combo lineage_${device}-${params.BUILD_VARIANT}
+				lunch lineage_${device}-${params.BUILD_VARIANT}
 				mka bacon -j ${params.BUILD_THREADS}
 				"""
 			}

@@ -1,5 +1,12 @@
 jenkins:
   authorizationStrategy: unsecured
+  numExecutors: 1
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: admin
+          password: admin
 jobs:
   - script: >
       pipelineJob('lineage') {
@@ -38,3 +45,5 @@ unclassified:
   gitSCM:
     globalConfigEmail: "john.doe@example.com"
     globalConfigName: "John Doe"
+  location:
+    url: http://localhost

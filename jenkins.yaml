@@ -1,5 +1,7 @@
 jenkins:
-  authorizationStrategy: unsecured
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
   numExecutors: 1
   securityRealm:
     local:
@@ -7,6 +9,7 @@ jenkins:
       users:
         - id: admin
           password: admin
+  slaveAgentPort: "disable"
 jobs:
   - script: >
       pipelineJob('lineage') {

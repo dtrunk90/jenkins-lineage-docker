@@ -9,7 +9,7 @@ jenkins:
       users:
         - id: admin
           password: admin
-  slaveAgentPort: disable
+  slaveAgentPort: -1
 jobs:
   - script: >
       pipelineJob('lineage') {

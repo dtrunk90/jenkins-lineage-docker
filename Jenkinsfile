@@ -1,8 +1,31 @@
+def xmlSlurper = new XmlSlurper()
+
+@NonCPS
+def appendOrReplaceProject(String lineageManifest, String manifest, String name, String path, String remote) {
+	def manifestXml = xmlSlurper.parseText(manifest)
+
+	if (!xmlSlurper.parseText(lineageManifest).project.any { it['@path'] == path }) {
+		def project = manifestXml.project.find { it['@path'] == path }
+
+		if (project == null) {
+			manifestXml.appendNode {
+				project(name: name, path: path, remote: remote)
+			}
+		} else {
+			project.replaceNode {
+				project(name: name, path: path, remote: remote)
+			}
+		}
+	}
+
+	return groovy.xml.XmlUtil.serialize(manifestXml)
+}
+
 pipeline {
 	agent any
 	environment {
 		REPOSITORY_URL = 'https://github.com/LineageOS/android.git'
-		LOCAL_MANIFESTS_FILE = '.repo/local_manifests/roomservice.xml'
+		LOCAL_MANIFEST_FILE = '.repo/local_manifests/roomservice.xml'
 		LINEAGE_SNIPPET_MANIFEST_FILE = '.repo/manifests/snippets/lineage.xml'
 	}
 	parameters {
@@ -39,6 +62,9 @@ pipeline {
 				failedValidationMessage: 'Invalid value',
 				name: 'DEVICE_REPOSITORY_NAME',
 				regex: '[^\\/]+\\/android_device_[^_]+_[^_]+'
+		text defaultValue: '',
+				description: 'If you need to override device dependencies because they are outdated. One repository name per line, e.g. Galaxy-MSM8916/android_device_samsung_msm8916-common. In most cases you can leave it blank.',
+				name: 'OVERRIDE_DEVICE_DEPENDENCIES'
 		extendedChoice defaultValue: 'userdebug',
 				description: 'See https://source.android.com/setup/develop/new-device#build-variants for more information.',
 				name: 'BUILD_VARIANT',
@@ -63,19 +89,22 @@ pipeline {
 			steps {
 				// ugly workaround for a known jenkins bug: https://issues.jenkins-ci.org/browse/JENKINS-41929
 				script {
-					if (env.BUILD_NUMBER.equals("1") && currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null) {
+					if ('1'.equals(env.BUILD_NUMBER) && currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null) {
 						currentBuild.displayName = 'Parameter loading'
 						currentBuild.description = 'Please restart pipeline'
 						currentBuild.result = 'ABORTED'
-						error('Stopping initial manually triggered build as we only want to get the parameters')
+
+						error 'Stopping initial manually triggered build as we only want to get the parameters'
 					}
 				}
 
 				sh """#!/bin/bash
-				repo init -u ${REPOSITORY_URL} -b ${params.BRANCH}
-				if [[ ! -e "${LOCAL_MANIFESTS_FILE}" ]]; then
-					mkdir -p "\$(dirname "${LOCAL_MANIFESTS_FILE}")"
-					tee "${LOCAL_MANIFESTS_FILE}" > /dev/null <<-EOF
+				repo init -u ${REPOSITORY_URL} -b ${params.BRANCH} --depth=1
+				repo sync -j ${params.SYNC_THREADS} --force-sync
+
+				if [[ ! -e "${LOCAL_MANIFEST_FILE}" ]]; then
+					mkdir -p "\$(dirname "${LOCAL_MANIFEST_FILE}")"
+					tee "${LOCAL_MANIFEST_FILE}" > /dev/null <<-EOF
 					<?xml version="1.0" encoding="UTF-8"?>
 					<manifest>
 					  <remote name="gitlab" fetch="https://gitlab.com" />
@@ -88,51 +117,48 @@ pipeline {
 					vendor = (params.VENDOR_REPOSITORY_NAME =~ /([^\/]+)\/(?:android|proprietary)_vendor_([^_]+)(?:_.*)?/)[-1][2]
 					device = (params.DEVICE_REPOSITORY_NAME =~ /([^\/]+)\/android_device_([^_]+)_([^_]+)/)[-1][3]
 
-					def appendProjectNode
-					appendProjectNode = { lineageManifest, name, path, remote ->
-						def manifest = readFile "${LOCAL_MANIFESTS_FILE}"
+					deviceDependencies = params.OVERRIDE_DEVICE_DEPENDENCIES.tokenize('\n').collectEntries {
+						def repository = it.tokenize('/')
+						return [(repository.last()): repository.init()]
+					}
 
-						if (!new XmlSlurper().parseText(manifest).project.any { it['@path'] == path }
-								&& !new XmlSlurper().parseText(lineageManifest).project.any { it['@path'] == path }) {
-							writeFile file: "${LOCAL_MANIFESTS_FILE}", text: groovy.xml.XmlUtil.serialize(new XmlSlurper()
-									.parseText(manifest).leftShift(new XmlSlurper()
-											.parseText("<project name=\"${name}\" path=\"${path}\" remote=\"${remote}\" />")))
+					def roomservice
+					roomservice = { lineageManifest, name, path, remote ->
+						def manifest = readFile "${LOCAL_MANIFEST_FILE}"
 
-							sh("""#!/bin/bash
-							repo sync -j ${params.SYNC_THREADS} "${path}"
-							""")
+						writeFile file: "${LOCAL_MANIFEST_FILE}",
+							text: appendOrReplaceProject(lineageManifest, manifest, name, path, remote)
 
-							if (fileExists("${path}/lineage.dependencies")) {
-								def remoteBaseUrl = 'https://github.com'
+						sh("""#!/bin/bash
+						repo sync -j ${params.SYNC_THREADS} "${path}"
+						""")
 
-								if ("gitlab".equals(remote)) {
-									remoteBaseUrl = 'https://gitlab.com'
+						if (fileExists("${path}/lineage.dependencies")) {
+							def remoteBaseUrl = 'https://github.com'
+
+							if ("gitlab".equals(remote)) {
+								remoteBaseUrl = 'https://gitlab.com'
+							}
+
+							readJSON(file: "${path}/lineage.dependencies").each {
+								def dependencyName = "${deviceDependencies.get(it['repository'], name.tokenize('/').init())}/${it['repository']}"
+								def response = httpRequest url: "${remoteBaseUrl}/${dependencyName}", quiet: true, validResponseCodes: '100:404'
+								def dependencyRemote = remote
+
+								if (response.status == 404) {
+									dependencyName = "LineageOS/${it['repository']}"
+									dependencyRemote = 'github'
 								}
 
-								readJSON(file: "${path}/lineage.dependencies").each {
-									def dependencyName = "${name.tokenize('/').first()}/${it['repository']}"
-									def response = httpRequest url: "${remoteBaseUrl}/${dependencyName}", quiet: true, validResponseCodes: '100:404'
-									def dependencyRemote = remote
-
-									if (response.status == 404) {
-										dependencyName = "LineageOS/${it['repository']}"
-										dependencyRemote = 'github'
-									}
-
-									appendProjectNode(lineageManifest, dependencyName, it['target_path'], dependencyRemote)
-								}
+								roomservice(lineageManifest, dependencyName, it['target_path'], dependencyRemote)
 							}
 						}
 					}
 
 					def lineageManifest = readFile "${LINEAGE_SNIPPET_MANIFEST_FILE}"
-					appendProjectNode(lineageManifest, params.VENDOR_REPOSITORY_NAME, "vendor/${vendor}", params.VENDOR_REPOSITORY_REMOTE)
-					appendProjectNode(lineageManifest, params.DEVICE_REPOSITORY_NAME, "device/${vendor}/${device}", params.DEVICE_REPOSITORY_REMOTE)
+					roomservice(lineageManifest, params.VENDOR_REPOSITORY_NAME, "vendor/${vendor}", params.VENDOR_REPOSITORY_REMOTE)
+					roomservice(lineageManifest, params.DEVICE_REPOSITORY_NAME, "device/${vendor}/${device}", params.DEVICE_REPOSITORY_REMOTE)
 				}
-
-				sh """#!/bin/bash
-				repo sync -j ${params.SYNC_THREADS} --force-sync
-				"""
 			}
 		}
 		stage('Build') {

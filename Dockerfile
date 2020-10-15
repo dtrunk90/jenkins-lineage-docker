@@ -10,8 +10,8 @@ RUN apt-get update \
 			lib32ncurses5-dev lib32readline-dev lib32z1-dev \
 			liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev \
 			libssl-dev libwxgtk3.0-dev libxml2 libxml2-utils lzop \
-			pngcrush python2 rsync schedtool squashfs-tools xsltproc \
-			zip zlib1g-dev
+			pngcrush procps python2 rsync schedtool squashfs-tools \
+			xsltproc zip zlib1g-dev
 
 # Set python2 as default python
 RUN ln -s /usr/bin/python2 /usr/bin/python

@@ -1,7 +1,6 @@
-def xmlSlurper = new XmlSlurper()
-
 @NonCPS
 def appendOrReplaceProject(String lineageManifest, String manifest, String name, String path, String remote) {
+	def xmlSlurper = new XmlSlurper()
 	def manifestXml = xmlSlurper.parseText(manifest)
 
 	if (!xmlSlurper.parseText(lineageManifest).project.any { it['@path'] == path }) {

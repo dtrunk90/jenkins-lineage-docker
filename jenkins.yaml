@@ -3,6 +3,8 @@ jenkins:
     loggedInUsersCanDoAnything:
       allowAnonymousRead: false
   numExecutors: 1
+  remotingSecurity:
+    enabled: true
   securityRealm:
     local:
       allowsSignup: false

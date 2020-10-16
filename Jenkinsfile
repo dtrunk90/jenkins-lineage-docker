@@ -54,7 +54,7 @@ pipeline {
 				type: 'PT_RADIO',
 				value: 'github, gitlab'
 		validatingString defaultValue: '',
-				description: 'GitHub device repository name, e.g. LineageOS/android_device_samsung_klte.',
+				description: 'Device repository name, e.g. LineageOS/android_device_samsung_klte.',
 				failedValidationMessage: 'Invalid value',
 				name: 'DEVICE_REPOSITORY_NAME',
 				regex: '[^\\/]+\\/android_device_[^_]+_[^_]+'

@@ -1,19 +1,16 @@
 @NonCPS
 def appendOrReplaceProject(String lineageManifest, String manifest, String name, String path, String remote) {
-	def xmlSlurper = new XmlSlurper()
-	def manifestXml = xmlSlurper.parseText(manifest)
+	def xmlParser = new XmlParser()
+	def manifestXml = xmlParser.parseText(manifest)
 
-	if (!xmlSlurper.parseText(lineageManifest).project.any { it['@path'] == path }) {
-		def project = manifestXml.project.find { it['@path'] == path }
+	if (!xmlParser.parseText(lineageManifest).children().any { it['@path'] == path }) {
+		def project = manifestXml.children().find { it['@path'] == path }
+		def newProject = new NodeBuilder().project(name: name, path: path, remote: remote)
 
-		if (project == null) {
-			manifestXml.appendNode {
-				project(name: name, path: path, remote: remote)
-			}
+		if (project) {
+			project.replaceNode(newProject)
 		} else {
-			project.replaceNode {
-				project(name: name, path: path, remote: remote)
-			}
+			manifestXml.append(newProject)
 		}
 	}
 
@@ -118,7 +115,7 @@ pipeline {
 
 					deviceDependencies = params.OVERRIDE_DEVICE_DEPENDENCIES.tokenize('\n').collectEntries {
 						def repository = it.tokenize('/')
-						return [(repository.last()): repository.init()]
+						return [(repository.last()): repository.init().join('/')]
 					}
 
 					def roomservice
@@ -140,7 +137,7 @@ pipeline {
 							}
 
 							readJSON(file: "${path}/lineage.dependencies").each {
-								def dependencyName = "${deviceDependencies.get(it['repository'], name.tokenize('/').init())}/${it['repository']}"
+								def dependencyName = "${deviceDependencies.get(it['repository'], name.tokenize('/').init().join('/'))}/${it['repository']}"
 								def response = httpRequest url: "${remoteBaseUrl}/${dependencyName}", quiet: true, validResponseCodes: '100:404'
 								def dependencyRemote = remote
 

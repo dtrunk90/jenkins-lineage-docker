@@ -126,7 +126,7 @@ pipeline {
 							text: appendOrReplaceProject(lineageManifest, manifest, name, path, remote)
 
 						sh("""#!/bin/bash
-						repo sync -j ${params.SYNC_THREADS} "${path}"
+						repo sync -j ${params.SYNC_THREADS} --force-sync "${path}"
 						""")
 
 						if (fileExists("${path}/lineage.dependencies")) {

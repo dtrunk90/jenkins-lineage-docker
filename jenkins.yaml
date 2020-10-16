@@ -39,12 +39,15 @@ jobs:
 security:
   scriptApproval:
     approvedSignatures:
-      - method groovy.lang.GroovyObject getProperty java.lang.String
-      - method groovy.util.XmlSlurper parseText java.lang.String
-      - method groovy.util.slurpersupport.GPathResult appendNode java.lang.Object
-      - method groovy.util.slurpersupport.GPathResult leftShift java.lang.Object
-      - new groovy.util.XmlSlurper
-      - staticMethod groovy.xml.XmlUtil serialize groovy.util.slurpersupport.GPathResult
+      - method groovy.lang.GroovyObject invokeMethod java.lang.String java.lang.Object
+      - method groovy.util.Node append groovy.util.Node
+      - method groovy.util.Node children
+      - method groovy.util.Node replaceNode groovy.util.Node
+      - method groovy.util.XmlParser parseText java.lang.String
+      - new groovy.util.NodeBuilder
+      - new groovy.util.XmlParser
+      - staticMethod groovy.xml.XmlUtil serialize groovy.util.Node
+      - staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods init java.util.List
       - staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods getAt java.lang.Object java.lang.String
 unclassified:
   gitSCM:

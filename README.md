@@ -11,10 +11,10 @@ This is a fully functional pre-configured [Jenkins](https://jenkins.io) server w
 1. Open [http://localhost](http://localhost)
 2. Login with username `admin` and password `admin`
 3. Click on the "lineage" job
-4. Click on "Build now" and wait until the build aborts
-5. Reload the page and click on "Build with parameters"
+4. Click on "Build Now" and wait until the build aborts
+5. Reload the page and click on "Build with Parameters"
 6. Follow the warnings by approving the In-process script
-7. Get back to the job and click on "Build with parameters" again
+7. Get back to the job and click on "Build with Parameters" again
 8. Fill in the parameters form (see below for details)
 9. Click on "Build"
 

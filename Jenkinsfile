@@ -85,7 +85,7 @@ pipeline {
 			steps {
 				// ugly workaround for a known jenkins bug: https://issues.jenkins-ci.org/browse/JENKINS-41929
 				script {
-					if ('1'.equals(env.BUILD_NUMBER) && currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null) {
+					if ((''.equals(params.VENDOR_REPOSITORY_NAME) || ''.equals(params.DEVICE_REPOSITORY_NAME) || '1'.equals(env.BUILD_NUMBER)) && currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null) {
 						currentBuild.displayName = 'Parameter loading'
 						currentBuild.description = 'Please restart pipeline'
 						currentBuild.result = 'ABORTED'

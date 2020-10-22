@@ -27,7 +27,7 @@ pipeline {
 	parameters {
 		listGitBranches branchFilter: 'refs/heads/(lineage-.*)',
 				credentialsId: '',
-				defaultValue: 'lineage-17.1',
+				defaultValue: '',
 				description: 'The branch you want to build.',
 				name: 'BRANCH',
 				remoteURL: 'https://github.com/LineageOS/android.git',
@@ -83,14 +83,18 @@ pipeline {
 	stages {
 		stage('Initialize') {
 			steps {
-				// ugly workaround for a known jenkins bug: https://issues.jenkins-ci.org/browse/JENKINS-41929
 				script {
+					// ugly workaround for a known jenkins bug: https://issues.jenkins-ci.org/browse/JENKINS-41929
 					if ((''.equals(params.VENDOR_REPOSITORY_NAME) || ''.equals(params.DEVICE_REPOSITORY_NAME) || '1'.equals(env.BUILD_NUMBER)) && currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null) {
 						currentBuild.displayName = 'Parameter loading'
 						currentBuild.description = 'Please restart pipeline'
 						currentBuild.result = 'ABORTED'
 
 						error 'Stopping initial manually triggered build as we only want to get the parameters'
+					}
+
+					if (''.equals(params.BRANCH)) {
+						error 'Please choose a branch'
 					}
 				}
 
